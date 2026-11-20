@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Satoru Gojo - Unlimited Void Player</title>
+    <style>
+        /* ==========================================
+           1. RESET & BASE STYLES
+           ========================================== */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #030611;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ==========================================
+           2. VIEWPORT CONTAINER & ZOOM-LOCKED 16:9 STAGE
+           ========================================== */
+        .stage-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at center, #0a1128 0%, #02040a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .scene-stage {
+            position: relative;
+            width: 1280px;
+            height: 720px;
+            flex-shrink: 0;
+            overflow: hidden;
+            perspective: 1200px;
+            transform-style: preserve-3d;
+            transform-origin: center center;
+            box-shadow: 0 0 60px rgba(0, 170, 255, 0.25), 0 0 120px rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            background: #060b19;
+        }
+
+        /* ==========================================
+           3. BACKGROUND LAYER & FALLBACK
+           ========================================== */
+        .bg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+
+        /* Intermediate Reference Layer for Element Alignment */
+        .ref-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 5;
+            mix-blend-mode: screen;
+            opacity: 0.45;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .ref-layer.hidden {
+            opacity: 0;
+        }
+
+        .bg-fallback-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            background-size: 5% 8.88%;
+            background-image:
+                linear-gradient(to right, rgba(0, 170, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 170, 255, 0.1) 1px, transparent 1px);
+            z-index: 2;
+            pointer-events: none;
+            display: none;
+        }
+        .grid-overlay.active {
+            display: block;
+        }
+
+        .bg-status-tag {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
+            z-index: 100;
+            font-size: 11px;
+            background: rgba(0, 10, 25, 0.75);
+            border: 1px solid rgba(0, 170, 255, 0.3);
+            padding: 4px 10px;
+            border-radius: 12px;
+            color: #7dd3fc;
+            pointer-events: none;
+            backdrop-filter: blur(6px);
+        }
+
+        /* ==========================================
+           4. COMMON GLASSMORPHISM WIDGET STYLES
+           ========================================== */
+        .widget {
+            position: absolute;
+            z-index: 10;
+            transform-style: preserve-3d;
+            backface-visibility: hidden;
+            transition: box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .widget-selected {
+            outline: 2px dashed #00aaff !important;
+            outline-offset: 4px;
+        }
+
+        /* Void Red Theme Mode */
+        body.void-red-active .scene-stage {
+            box-shadow: 0 0 70px rgba(255, 30, 66, 0.45), 0 0 130px rgba(120, 0, 20, 0.75);
+            background: radial-gradient(circle at center, #26040c 0%, #090104 100%);
+        }
+        body.void-red-active .bg-layer {
+            filter: hue-rotate(155deg) saturate(1.75) brightness(1.08) drop-shadow(0 0 24px rgba(255, 30, 66, 0.4));
+        }
+        body.void-red-active .ref-layer {
+            filter: hue-rotate(155deg) saturate(1.8) brightness(1.15);
+        }
+        body.void-red-active .bg-fallback-svg {
+            filter: hue-rotate(155deg) saturate(1.7) brightness(1.1);
+        }
+        body.void-red-active .grid-overlay {
+            background-image:
+                linear-gradient(to right, rgba(255, 46, 85, 0.16) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 46, 85, 0.16) 1px, transparent 1px);
+        }
+        body.void-red-active .cup-widget {
+            background: rgba(70, 8, 22, 0.65);
+            border-color: rgba(255, 46, 85, 0.6);
+            box-shadow: 0 0 28px rgba(255, 30, 66, 0.55), inset 0 0 14px rgba(255, 30, 66, 0.25);
+        }
+        body.void-red-active .cup-widget .steam {
+            background: rgba(255, 130, 150, 0.75);
+        }
+        body.void-red-active .chibi-sprite-img {
+            filter: hue-rotate(155deg) saturate(1.65) brightness(1.1) drop-shadow(0 8px 20px rgba(255, 30, 66, 0.75));
+        }
+        /* Tonalidades específicas de cada versión del Mini Gojo */
+        .chibi-sprite-img.variant-blue {
+            filter: hue-rotate(195deg) saturate(1.85) brightness(1.08) drop-shadow(0 8px 20px rgba(0, 170, 255, 0.85));
+        }
+        .chibi-sprite-img.variant-red {
+            filter: hue-rotate(145deg) saturate(1.9) brightness(1.06) drop-shadow(0 8px 20px rgba(255, 30, 66, 0.88));
+        }
+        body.void-red-active .chibi-sprite-img.variant-blue {
+            filter: hue-rotate(195deg) saturate(1.85) brightness(1.08) drop-shadow(0 8px 20px rgba(0, 170, 255, 0.85));
+        }
+        body.void-red-active .chibi-sprite-img.variant-red {
+            filter: hue-rotate(145deg) saturate(1.9) brightness(1.06) drop-shadow(0 8px 20px rgba(255, 30, 66, 0.88));
+        }
+        body.void-red-active .chibi-quote {
+            background: rgba(38, 4, 12, 0.85);
+            border-color: rgba(255, 46, 85, 0.55);
+            color: #ffe4e8;
+        }
+        body.void-red-active .glass-panel {
+            border-color: rgba(255, 46, 85, 0.5);
+            box-shadow:
+                0 15px 35px rgba(0, 0, 0, 0.7),
+                inset 0 0 15px rgba(255, 30, 66, 0.2),
+                0 0 22px rgba(255, 30, 66, 0.35);
+        }
+        body.void-red-active .gojo-badge {
+            background: linear-gradient(135deg, #ff1e42, #7a0019);
+            box-shadow: 0 0 14px rgba(255, 30, 66, 0.8);
+        }
+        body.void-red-active .track-info p,
+        body.void-red-active .phone-date,
+        body.void-red-active .phone-card-title {
+            color: #ff6b81;
+        }
+        body.void-red-active .phone-time {
+            color: #ffe4e8;
+            text-shadow: 0 0 12px rgba(255, 30, 66, 0.95);
+        }
+        body.void-red-active .vis-bar {
+            background: linear-gradient(to top, #7a0019, #ff1e42, #ffe4e8);
+            box-shadow: 0 0 10px rgba(255, 30, 66, 0.65);
+        }
+        body.void-red-active .vis-bar.active-glow {
+            box-shadow: 0 0 14px #ff1e42, 0 -2px 8px #ffe4e8;
+        }
+        body.void-red-active .progress-fill {
+            background: linear-gradient(90deg, #ff1e42, #ff6b81);
+            box-shadow: 0 0 10px #ff1e42;
+        }
+        body.void-red-active .btn-play {
+            background: linear-gradient(135deg, #ff1e42, #99001e);
+            box-shadow: 0 0 18px rgba(255, 30, 66, 0.75);
+        }
+        body.void-red-active .phone-widget {
+            border-color: rgba(255, 46, 85, 0.65);
+            box-shadow:
+                0 25px 45px rgba(0, 0, 0, 0.85),
+                0 0 35px rgba(255, 30, 66, 0.4),
+                inset 0 0 20px rgba(255, 30, 66, 0.2);
+        }
+        body.void-red-active .phone-card {
+            background: rgba(45, 5, 16, 0.85);
+            border-color: rgba(255, 46, 85, 0.5);
+        }
+        body.void-red-active .app-icon {
+            background: rgba(255, 30, 66, 0.16);
+            border-color: rgba(255, 46, 85, 0.42);
+        }
+        body.void-red-active .app-icon:hover {
+            background: #ff1e42;
+            color: #ffffff;
+            box-shadow: 0 0 14px #ff1e42;
+        }
+        body.void-red-active .moon-widget {
+            background: radial-gradient(circle at 35% 35%, rgba(255, 228, 232, 0.35) 0%, rgba(255, 30, 66, 0.28) 55%, rgba(90, 0, 20, 0.2) 100%);
+            box-shadow: 0 0 32px rgba(255, 30, 66, 0.55), inset 0 0 12px rgba(255, 255, 255, 0.4);
+            border-color: rgba(255, 107, 129, 0.5);
+            text-shadow: 0 0 8px #ff1e42;
+        }
+        body.void-red-active .lantern-widget {
+            background: linear-gradient(180deg, rgba(255, 30, 66, 0.28), rgba(70, 0, 15, 0.55));
+            border-color: rgba(255, 46, 85, 0.6);
+            box-shadow: 0 0 25px rgba(255, 30, 66, 0.5);
+        }
+        body.void-red-active .lantern-core {
+            box-shadow: 0 0 18px #ff1e42, 0 0 35px #ff1e42;
+            animation: pulseGlowRed 2.5s infinite alternate ease-in-out;
+        }
+        @keyframes pulseGlowRed {
+            0% { transform: scale(0.92); opacity: 0.75; box-shadow: 0 0 12px #ff1e42; }
+            100% { transform: scale(1.08); opacity: 1; box-shadow: 0 0 28px #ff1e42, 0 0 45px #ff6b81; }
+        }
+        body.void-red-active .right-menu {
+            border-color: rgba(255, 107, 129, 0.5);
+            box-shadow: 0 0 22px rgba(255, 30, 66, 0.4), inset 0 0 12px rgba(255, 30, 66, 0.2);
+        }
+        body.void-red-active .right-menu button {
+            background: rgba(255, 30, 66, 0.14);
+            border-color: rgba(255, 107, 129, 0.45);
+        }
+        body.void-red-active .right-menu button:hover {
+            background: #ff1e42;
+            color: #ffffff;
+            box-shadow: 0 0 18px #ff1e42;
+        }
+
+        .glass-panel {
+            background: rgba(8, 16, 36, 0.68);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 170, 255, 0.4);
+            box-shadow:
+                0 15px 35px rgba(0, 0, 0, 0.65),
+                inset 0 0 15px rgba(0, 170, 255, 0.15),
+                0 0 20px rgba(0, 170, 255, 0.25);
+            border-radius: 18px;
+        }
+
+        /* ==========================================
+           5. MUSIC PLAYER WIDGET (.music-player)
+           ========================================== */
+        .music-player {
+            width: 310px;
+            padding: 14px;
+            color: #ffffff;
+            transform-origin: top left;
+        }
+
+        .player-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .player-title-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .gojo-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00aaff, #7000ff);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            font-size: 14px;
+            box-shadow: 0 0 12px rgba(0, 170, 255, 0.7);
+        }
+
+        .track-info h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #e0f2fe;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+        .track-info p {
+            font-size: 11px;
+            color: #38bdf8;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 180px;
+        }
+
+        .visualizer-container {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            height: 32px;
+            gap: 3px;
+            margin: 8px 0;
+            padding: 4px 8px;
+            background: rgba(0, 5, 16, 0.45);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 170, 255, 0.25);
+            box-shadow: inset 0 0 10px rgba(0, 170, 255, 0.1);
+        }
+
+        .vis-bar {
+            flex: 1;
+            background: linear-gradient(to top, #0044cc, #00aaff, #e0f2fe);
+            border-radius: 3px 3px 1px 1px;
+            height: 12%;
+            min-height: 4px;
+            transition: height 0.08s ease, background 0.2s ease, box-shadow 0.08s ease;
+            box-shadow: 0 0 8px rgba(0, 170, 255, 0.5);
+        }
+
+        .vis-bar.active-glow {
+            box-shadow: 0 0 12px #00aaff, 0 -2px 6px #e0f2fe;
+        }
+
+        .progress-box {
+            margin-bottom: 8px;
+        }
+        .time-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+        .progress-bar-bg {
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            width: 36%;
+            background: linear-gradient(90deg, #00aaff, #38bdf8);
+            border-radius: 3px;
+            box-shadow: 0 0 8px #00aaff;
+            transition: width 0.1s linear;
+        }
+
+        .player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .btn-ctrl {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+        }
+        .btn-ctrl:hover {
+            color: #00aaff;
+            background: rgba(0, 170, 255, 0.15);
+        }
+
+        .btn-play {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #00aaff, #0055ff);
+            color: #ffffff;
+            font-size: 15px;
+            box-shadow: 0 0 16px rgba(0, 170, 255, 0.6);
+        }
+        .btn-play:hover {
+            transform: scale(1.08);
+            box-shadow: 0 0 22px rgba(0, 170, 255, 0.9);
+            background: linear-gradient(135deg, #38bdf8, #0066ff);
+        }
+
+        .volume-box {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .volume-slider {
+            width: 48px;
+            accent-color: #00aaff;
+            cursor: pointer;
+        }
+
+        .playlist-mini {
+            margin-top: 8px;
+            padding-top: 6px;
+            border-top: 1px solid rgba(0, 170, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            max-height: 68px;
+            overflow-y: auto;
+        }
+        .playlist-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+        .playlist-item:hover, .playlist-item.active {
+            background: rgba(0, 170, 255, 0.25);
+            color: #38bdf8;
+        }
+
+        /* ==========================================
+           6. PHONE WIDGET (.phone-widget) & NOTIFICATIONS
+           ========================================== */
+        .phone-widget {
+            width: 150px;
+            height: 315px;
+            background: rgba(5, 12, 28, 0.88);
+            border: 2px solid rgba(0, 170, 255, 0.6);
+            border-radius: 24px;
+            box-shadow:
+                0 25px 45px rgba(0, 0, 0, 0.85),
+                0 0 35px rgba(0, 170, 255, 0.35),
+                inset 0 0 20px rgba(0, 170, 255, 0.15);
+            padding: 8px 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: absolute;
+            overflow: hidden;
+            transform-origin: center center;
+        }
+
+        .phone-notch {
+            width: 58px;
+            height: 12px;
+            background: #02050e;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notch-cam {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #00aaff;
+            box-shadow: 0 0 6px #00aaff;
+        }
+
+        .phone-screen {
+            flex: 1;
+            margin-top: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .phone-clock-container {
+            width: 100%;
+            padding: 5px 4px 3px 4px;
+            background: rgba(3, 8, 22, 0.75);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 10px;
+            border: 1px solid rgba(0, 170, 255, 0.25);
+            margin-top: 2px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+        }
+
+        .phone-time {
+            font-size: 21px;
+            font-weight: 300;
+            line-height: 1.0;
+            color: #e0f2fe;
+            text-shadow: 0 0 10px rgba(0, 170, 255, 0.9);
+            letter-spacing: 0.5px;
+        }
+        .phone-date {
+            font-size: 8px;
+            color: #38bdf8;
+            margin-top: 2px;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Notifications Container */
+        .phone-notifications-stack {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            max-height: 165px;
+            overflow-y: auto;
+            padding: 2px 1px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(0, 170, 255, 0.4) transparent;
+        }
+
+        .phone-card {
+            width: 100%;
+            background: rgba(0, 24, 52, 0.82);
+            border: 1px solid rgba(0, 170, 255, 0.45);
+            border-radius: 9px;
+            padding: 5px 6px;
+            text-align: left;
+            position: relative;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5), inset 0 0 10px rgba(0, 170, 255, 0.12);
+            animation: msgDrop 0.55s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transform-origin: top center;
+        }
+
+        .phone-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2px;
+        }
+
+        .phone-card-title {
+            font-size: 8px;
+            color: #38bdf8;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .phone-card-title::before {
+            content: '💬';
+            font-size: 8px;
+        }
+
+        .phone-card-time {
+            font-size: 7px;
+            color: #94a3b8;
+        }
+
+        .phone-card-body {
+            font-size: 8.5px;
+            color: #f1f5f9;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+
+        @keyframes msgDrop {
+            0% {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.85);
+                filter: brightness(2);
+            }
+            70% {
+                transform: translateY(3px) scale(1.02);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                filter: brightness(1);
+            }
+        }
+
+        .replay-msgs-btn {
+            background: rgba(0, 170, 255, 0.18);
+            border: 1px solid rgba(0, 170, 255, 0.4);
+            color: #7dd3fc;
+            border-radius: 6px;
+            font-size: 7.5px;
+            padding: 2px 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            margin-top: 2px;
+        }
+        .replay-msgs-btn:hover {
+            background: #00aaff;
+            color: #020617;
+            box-shadow: 0 0 8px #00aaff;
+        }
+
+        /* Blue WhatsApp-style Contacts List inside Phone */
+        .phone-contacts-view {
+            width: 100%;
+            max-height: 165px;
+            display: none;
+            flex-direction: column;
+            background: rgba(4, 18, 42, 0.92);
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55), inset 0 0 10px rgba(0, 170, 255, 0.15);
+            animation: msgDrop 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        .phone-contacts-view.active {
+            display: flex;
+        }
+        .wa-blue-header {
+            background: linear-gradient(90deg, #0284c7, #00aaff);
+            color: #f8fafc;
+            padding: 4px 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 8px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            border-bottom: 1px solid rgba(224, 242, 254, 0.25);
+        }
+        .wa-back-btn {
+            background: rgba(2, 12, 30, 0.45);
+            border: 1px solid rgba(224, 242, 254, 0.35);
+            color: #e0f2fe;
+            border-radius: 5px;
+            font-size: 7px;
+            padding: 1px 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .wa-back-btn:hover {
+            background: #e0f2fe;
+            color: #030611;
+        }
+        .wa-contacts-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 3px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(56, 189, 248, 0.45) transparent;
+        }
+        .wa-contact-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 4px;
+            background: rgba(8, 30, 66, 0.78);
+            border: 1px solid rgba(56, 189, 248, 0.22);
+            border-radius: 7px;
+            padding: 3px 4px;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .wa-contact-row:hover {
+            background: rgba(14, 54, 112, 0.88);
+            border-color: rgba(125, 211, 252, 0.55);
+        }
+        .wa-contact-info {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            min-width: 0;
+            flex: 1;
+        }
+        .wa-contact-avatar {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #38bdf8;
+            flex-shrink: 0;
+            background: #082f49;
+        }
+        .wa-contact-meta {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            text-align: left;
+        }
+        .wa-contact-name {
+            font-size: 7.5px;
+            font-weight: 700;
+            color: #f0f9ff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wa-contact-status {
+            font-size: 6.2px;
+            color: #7dd3fc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .wa-add-btn {
+            background: linear-gradient(135deg, #00aaff, #0284c7);
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-size: 6.8px;
+            font-weight: 700;
+            padding: 2px 5px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: transform 0.15s ease, background 0.2s ease;
+        }
+        .wa-add-btn:hover {
+            transform: scale(1.05);
+            background: #38bdf8;
+            color: #020617;
+        }
+        .wa-add-btn.added {
+            background: rgba(16, 185, 129, 0.25);
+            color: #6ee7b7;
+            border: 1px solid rgba(110, 231, 183, 0.5);
+        }
+        body.void-red-active .phone-contacts-view {
+            background: rgba(42, 6, 16, 0.92);
+            border-color: rgba(255, 77, 109, 0.55);
+        }
+        body.void-red-active .wa-blue-header {
+            background: linear-gradient(90deg, #99001e, #ff1e42);
+        }
+        body.void-red-active .wa-contact-row {
+            background: rgba(65, 8, 22, 0.75);
+            border-color: rgba(255, 77, 109, 0.28);
+        }
+        body.void-red-active .wa-add-btn {
+            background: linear-gradient(135deg, #ff1e42, #be123c);
+        }
+
+        .phone-apps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            width: 100%;
+        }
+        .app-icon {
+            height: 34px;
+            background: rgba(0, 170, 255, 0.15);
+            border: 1px solid rgba(0, 170, 255, 0.35);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .app-icon svg {
+            width: 13px;
+            height: 13px;
+        }
+        .app-icon:hover {
+            background: #00aaff;
+            color: #030611;
+            transform: translateY(-2px);
+            box-shadow: 0 0 14px #00aaff;
+        }
+        .app-label {
+            font-size: 7px;
+            margin-top: 1px;
+        }
+
+        .phone-home-bar {
+            width: 50px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 2px;
+            margin: 3px auto 0 auto;
+        }
+
+        /* ==========================================
+           7. SECONDARY AMBIENT WIDGETS
+           ========================================== */
+        .cup-widget {
+            width: 72px;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(10, 25, 50, 0.45);
+            border-radius: 50%;
+            border: 1px solid rgba(0, 170, 255, 0.35);
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.25);
+            cursor: pointer;
+        }
+        .steam-container {
+            position: absolute;
+            top: -15px;
+            display: flex;
+            gap: 4px;
+        }
+        .steam {
+            width: 3px;
+            height: 16px;
+            background: rgba(224, 242, 254, 0.6);
+            border-radius: 2px;
+            animation: steamRise 2s infinite ease-in-out;
+        }
+        .steam:nth-child(2) { animation-delay: 0.5s; }
+        .steam:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes steamRise {
+            0% { transform: translateY(0) scaleX(1); opacity: 0.8; }
+            50% { transform: translateY(-10px) scaleX(1.5); opacity: 0.4; }
+            100% { transform: translateY(-20px) scaleX(2); opacity: 0; }
+        }
+
+        .moon-widget {
+            width: 86px;
+            height: 86px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(224, 242, 254, 0.35) 0%, rgba(0, 170, 255, 0.2) 55%, rgba(0, 51, 170, 0.15) 100%);
+            box-shadow: 0 0 30px rgba(0, 170, 255, 0.45), inset 0 0 12px rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(125, 211, 252, 0.4);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            color: #e0f2fe;
+            letter-spacing: 1px;
+            text-shadow: 0 0 6px #00aaff;
+        }
+
+        .chibi-widget {
+            width: 112px;
+            height: 132px;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 4px 2px;
+            cursor: pointer;
+            text-align: center;
+            overflow: visible;
+        }
+
+        .chibi-stage {
+            position: relative;
+            width: 92px;
+            height: 92px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 3px;
+        }
+
+        .chibi-sprite-img {
+            width: 88px;
+            height: 88px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 14px rgba(0, 170, 255, 0.45));
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+            animation: chibiIdleBreath 2.6s ease-in-out infinite;
+        }
+
+        .chibi-fx-badge {
+            position: absolute;
+            top: -8px;
+            right: 2px;
+            font-size: 16px;
+            pointer-events: none;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.65));
+        }
+
+        /* Estado 1: Feliz */
+        .chibi-widget.mood-happy .chibi-sprite-img {
+            animation: chibiHappyBounce 1.1s ease-in-out infinite;
+            filter: drop-shadow(0 8px 16px rgba(56, 189, 248, 0.7)) brightness(1.08);
+        }
+        .chibi-widget.mood-happy .chibi-fx-badge {
+            animation: chibiSparklePop 1.1s ease-in-out infinite;
+        }
+
+        /* Estado 2: Enamorado */
+        .chibi-widget.mood-love .chibi-sprite-img {
+            animation: chibiLoveSway 1.6s ease-in-out infinite;
+            filter: drop-shadow(0 8px 18px rgba(255, 64, 129, 0.7)) saturate(1.25);
+        }
+        .chibi-widget.mood-love .chibi-fx-badge {
+            animation: chibiHeartFloat 1.5s ease-in-out infinite;
+        }
+
+        /* Estado 3: Enojado */
+        .chibi-widget.mood-angry .chibi-sprite-img {
+            animation: chibiAngryShake 0.42s ease-in-out infinite;
+            filter: drop-shadow(0 8px 18px rgba(255, 30, 66, 0.8)) contrast(1.15);
+        }
+        .chibi-widget.mood-angry .chibi-fx-badge {
+            animation: chibiAngerPulse 0.6s ease-in-out infinite;
+        }
+
+        @keyframes chibiIdleBreath {
+            0%, 100% { transform: translateY(0px) scale(1); }
+            50% { transform: translateY(-4px) scale(1.02); }
+        }
+
+        @keyframes chibiHappyBounce {
+            0%, 100% { transform: translateY(0px) scale(1.03) rotate(-2deg); }
+            50% { transform: translateY(-8px) scale(1.07) rotate(2deg); }
+        }
+
+        @keyframes chibiLoveSway {
+            0%, 100% { transform: translateY(-2px) rotate(-5deg) scale(1.04); }
+            50% { transform: translateY(-6px) rotate(5deg) scale(1.08); }
+        }
+
+        @keyframes chibiAngryShake {
+            0%, 100% { transform: translateX(0px) rotate(0deg) scale(1.04); }
+            25% { transform: translateX(-3px) rotate(-3deg) scale(1.05); }
+            75% { transform: translateX(3px) rotate(3deg) scale(1.05); }
+        }
+
+        @keyframes chibiSparklePop {
+            0%, 100% { transform: translateY(0) scale(0.95) rotate(0deg); opacity: 0.9; }
+            50% { transform: translateY(-6px) scale(1.2) rotate(15deg); opacity: 1; }
+        }
+
+        @keyframes chibiHeartFloat {
+            0% { transform: translateY(2px) scale(0.85); opacity: 0.75; }
+            50% { transform: translateY(-9px) scale(1.22); opacity: 1; }
+            100% { transform: translateY(-14px) scale(0.9); opacity: 0.8; }
+        }
+
+        @keyframes chibiAngerPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.25); opacity: 1; }
+        }
+
+        @keyframes chibiClickSwapPop {
+            0% { transform: scale(0.75) rotate(-14deg); opacity: 0.35; }
+            55% { transform: scale(1.18) rotate(8deg); opacity: 1; }
+            80% { transform: scale(0.95) rotate(-4deg); }
+            100% { transform: scale(1.04) rotate(0deg); opacity: 1; }
+        }
+
+        .chibi-sprite-img.swap-anim {
+            animation: chibiClickSwapPop 0.52s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        .chibi-quote {
+            font-size: 9px;
+            color: #e0f2fe;
+            background: rgba(4, 12, 28, 0.78);
+            border: 1px solid rgba(0, 170, 255, 0.35);
+            border-radius: 8px;
+            padding: 2px 6px;
+            font-weight: 600;
+            line-height: 1.2;
+            max-width: 108px;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+        }
+
+        .lantern-widget {
+            width: 56px;
+            height: 92px;
+            background: linear-gradient(180deg, rgba(0, 170, 255, 0.22), rgba(0, 40, 90, 0.45));
+            border: 1px solid rgba(0, 170, 255, 0.5);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 0;
+            box-shadow: 0 0 25px rgba(0, 170, 255, 0.45);
+            cursor: pointer;
+        }
+        .lantern-core {
+            width: 22px;
+            height: 32px;
+            background: #e0f2fe;
+            border-radius: 6px;
+            box-shadow: 0 0 18px #00aaff, 0 0 35px #00aaff;
+            animation: pulseGlow 2.5s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseGlow {
+            0% { transform: scale(0.92); opacity: 0.7; box-shadow: 0 0 12px #00aaff; }
+            100% { transform: scale(1.08); opacity: 1; box-shadow: 0 0 28px #00aaff, 0 0 45px #38bdf8; }
+        }
+
+        /* ==========================================
+           8. RIGHT NAVIGATION MENU (.right-menu)
+           ========================================== */
+        .right-menu {
+            left: 93.2%;
+            top: 3.8%;
+            width: 58px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            background: rgba(3, 10, 26, 0.72);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            padding: 10px 6px;
+            border-radius: 32px;
+            box-shadow:
+                0 0 22px rgba(0, 170, 255, 0.35),
+                inset 0 0 12px rgba(0, 170, 255, 0.15);
+            z-index: 200;
+        }
+
+        .right-menu button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: rgba(0, 170, 255, 0.12);
+            border: 1px solid rgba(125, 211, 252, 0.45);
+            color: #e0f2fe;
+            cursor: pointer;
+            transition: all 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .right-menu button svg {
+            width: 21px;
+            height: 21px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 5px rgba(56, 189, 248, 0.7));
+        }
+
+        .right-menu button:hover {
+            background: #00aaff;
+            color: #030611;
+            box-shadow: 0 0 18px #00aaff;
+            transform: scale(1.12);
+        }
+
+        .right-menu button:hover svg {
+            filter: none;
+        }
+
+        /* ==========================================
+           9. LIVE CALIBRATION PANEL
+           ========================================== */
+        .calib-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 320px;
+            background: rgba(4, 10, 24, 0.94);
+            backdrop-filter: blur(18px);
+            border: 1px solid rgba(0, 170, 255, 0.55);
+            border-radius: 16px;
+            padding: 18px;
+            z-index: 300;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 22px rgba(0, 170, 255, 0.35);
+            display: none;
+            max-height: calc(100% - 40px);
+            overflow-y: auto;
+        }
+
+        .calib-panel.active {
+            display: block;
+        }
+
+        .calib-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(0, 170, 255, 0.25);
+        }
+
+        .calib-header h2 {
+            font-size: 14px;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .calib-group {
+            margin-bottom: 12px;
+        }
+
+        .calib-group label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #94a3b8;
+            margin-bottom: 4px;
+        }
+
+        .calib-group input[type="range"] {
+            width: 100%;
+            accent-color: #00aaff;
+            cursor: pointer;
+        }
+
+        .calib-select {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 20, 45, 0.85);
+            border: 1px solid rgba(0, 170, 255, 0.4);
+            color: #e0f2fe;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 14px;
+            outline: none;
+        }
+
+        .calib-btn-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .calib-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(0, 170, 255, 0.4);
+            background: rgba(0, 170, 255, 0.15);
+            color: #e0f2fe;
+            font-size: 11px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        .calib-btn:hover {
+            background: #00aaff;
+            color: #020617;
+            box-shadow: 0 0 12px #00aaff;
+        }
+
+        .toast {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 170, 255, 0.95);
+            color: #020617;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            box-shadow: 0 0 20px #00aaff;
+            z-index: 400;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="stage-container" id="stageContainer">
+        <!-- ZOOM-LOCKED 16:9 SCENE STAGE (1280x720 BASE) -->
+        <div class="scene-stage" id="sceneStage">
+
+            <!-- FALLBACK VECTOR BACKDROP -->
+            <svg class="bg-fallback-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#050a1a"/>
+                        <stop offset="50%" stop-color="#0a1836"/>
+                        <stop offset="100%" stop-color="#020409"/>
+                    </linearGradient>
+                    <radialGradient id="auraGlow" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#00aaff" stop-opacity="0.25"/>
+                        <stop offset="100%" stop-color="#00aaff" stop-opacity="0"/>
+                    </radialGradient>
+                    <linearGradient id="deskGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#0a192f"/>
+                        <stop offset="100%" stop-color="#020712"/>
+                    </linearGradient>
+                </defs>
+                <rect width="1920" height="1080" fill="url(#skyGrad)"/>
+                <circle cx="1400" cy="220" r="180" fill="#e0f2fe" opacity="0.12"/>
+                <circle cx="1400" cy="220" r="260" fill="url(#auraGlow)"/>
+                <path d="M 0 620 L 1920 620 L 1920 1080 L 0 1080 Z" fill="url(#deskGrad)"/>
+                <line x1="0" y1="620" x2="1920" y2="620" stroke="#00aaff" stroke-opacity="0.3" stroke-width="2"/>
+            </svg>
+
+            <!-- MAIN EXTERNAL WALLPAPER IMAGE -->
+            <img id="bgImg" class="bg-layer" src="https://i.imgur.com/MwXsvOP.png" alt="Gojo Desktop Wallpaper">
+
+            <!-- INTERMEDIATE REFERENCE LAYER (Diseño sin título (1).jpg) -->
+            <img id="refLayerImg" class="ref-layer" src="Diseño sin título (1).jpg" alt="Capa Intermedia de Referencia de Elementos">
+
+            <!-- GRID ALIGNMENT OVERLAY -->
+            <div class="grid-overlay" id="gridOverlay"></div>
+
+            <!-- STATUS BADGE -->
+            <div class="bg-status-tag" id="bgStatus">Fondo: Gojo Desktop • Vista 3D Live</div>
+
+            <!-- MUSIC PLAYER WIDGET -->
+            <div class="widget glass-panel music-player" id="musicPlayer">
+                <div class="player-header">
+                    <div class="player-title-box">
+                        <div class="gojo-badge">五</div>
+                        <div class="track-info">
+                            <h3 id="trackTitle">Gojo Satoru</h3>
+                            <p id="trackArtist">Jujutsu Kaisen • Unlimited Mix</p>
+                        </div>
+                    </div>
+                    <span style="font-size: 16px; color: #38bdf8; cursor: pointer;" id="btnPlaylistToggle">♪</span>
+                </div>
+
+                <!-- Visualizer Bars -->
+                <div class="visualizer-container" id="visContainer">
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                    <div class="vis-bar"></div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-box">
+                    <div class="time-row">
+                        <span id="currentTime">1:24</span>
+                        <span id="totalTime">3:52</span>
+                    </div>
+                    <div class="progress-bar-bg" id="progressBar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- Player Controls -->
+                <div class="player-controls">
+                    <button class="btn-ctrl" id="btnPrev" title="Anterior">⏮</button>
+                    <button class="btn-ctrl btn-play" id="btnPlay" title="Reproducir/Pausar">▶</button>
+                    <button class="btn-ctrl" id="btnNext" title="Siguiente">⏭</button>
+
+                    <div class="volume-box">
+                        <span style="font-size: 12px; color: #7dd3fc;">🔊</span>
+                        <input type="range" class="volume-slider" id="volSlider" min="0" max="1" step="0.05" value="0.8">
+                    </div>
+                </div>
+
+                <!-- Playlist Box -->
+                <div class="playlist-mini" id="playlistBox">
+                    <div class="playlist-item active" data-index="0">
+                        <span>1. Kaikai Kitan - Eve</span>
+                        <span>3:52</span>
+                    </div>
+                    <div class="playlist-item" data-index="1">
+                        <span>2. SPECIALZ - King Gnu</span>
+                        <span>3:58</span>
+                    </div>
+                    <div class="playlist-item" data-index="2">
+                        <span>3. Ao no Sumika - Tatsuya Kitani</span>
+                        <span>3:15</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PHONE WIDGET -->
+            <div class="widget phone-widget" id="phoneWidget">
+                <div class="phone-notch">
+                    <div class="notch-cam"></div>
+                </div>
+
+                <div class="phone-screen">
+                    <div class="phone-clock-container">
+                        <div class="phone-time" id="phoneTime">02:46</div>
+                        <div class="phone-date" id="phoneDate">Mar, 20 Nov</div>
+                    </div>
+
+                    <!-- REAL-TIME CASCADING NOTIFICATIONS CONTAINER -->
+                    <div class="phone-notifications-stack" id="phoneNotificationsStack">
+                        <!-- Dynamic notification cards injected via JS -->
+                    </div>
+
+                    <!-- BLUE WHATSAPP-STYLE FRIEND CONTACTS LIST -->
+                    <div class="phone-contacts-view" id="phoneContactsView">
+                        <div class="wa-blue-header">
+                            <span>💙 Contactos • Agregar</span>
+                            <button class="wa-back-btn" id="btnBackToMsgs">Chats</button>
+                        </div>
+                        <div class="wa-contacts-list" id="waContactsList"></div>
+                    </div>
+
+                    <div class="phone-apps">
+                        <div class="app-icon" id="appAudio" title="Teléfono / Audio">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.81.37 1.6.72 2.34a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.74.35 1.53.6 2.34.72A2 2 0 0 1 22 16.92z"/>
+                            </svg>
+                            <span class="app-label">Audio</span>
+                        </div>
+                        <div class="app-icon" id="appTheme" title="Mensajes / Void">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                            </svg>
+                            <span class="app-label">Void</span>
+                        </div>
+                        <div class="app-icon" id="appGrid" title="Whats">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                                <circle cx="12" cy="13" r="4"/>
+                            </svg>
+                            <span class="app-label">Whats</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="phone-home-bar"></div>
+            </div>
+
+            <!-- TEA CUP WIDGET -->
+            <div class="widget cup-widget" id="cupWidget" title="Taza de Gojo">
+                <div class="steam-container">
+                    <div class="steam"></div>
+                    <div class="steam"></div>
+                    <div class="steam"></div>
+                </div>
+                <span style="font-size: 30px;">☕</span>
+            </div>
+
+            <!-- MOON WIDGET -->
+            <div class="widget moon-widget" id="moonWidget" title="Luna Six Eyes">
+                <span>SIX EYES</span>
+            </div>
+
+            <!-- CHIBI GOJO WIDGET -->
+            <div class="widget chibi-widget mood-happy" id="chibiWidget" title="Chibi Satoru - Clic para cambiar estado">
+                <div class="chibi-stage">
+                    <img id="chibiSpriteImg" class="chibi-sprite-img" src="https://xatimg.com/image/j9x9oxb9FWxj.png" alt="Chibi Satoru Gojo">
+                    <span class="chibi-fx-badge" id="chibiMoodBadge">✨</span>
+                </div>
+                <div class="chibi-quote" id="chibiQuote">Feliz • "¡Saikyou!"</div>
+            </div>
+
+            <!-- LANTERN WIDGET -->
+            <div class="widget lantern-widget" id="lanternWidget" title="Linterna Azul">
+                <span style="font-size: 13px; color: #7dd3fc;">⛩️</span>
+                <div class="lantern-core"></div>
+                <span style="font-size: 10px; color: #38bdf8; font-weight: bold;">虚式</span>
+            </div>
+
+            <!-- RIGHT NAVIGATION MENU (1: Casa, 2: Galería/Imagen, 3: Mando, 4: Ajustes) -->
+            <div class="widget right-menu" id="rightMenuWidget">
+                <button id="btnMenuHome" title="Inicio / Restablecer Posiciones">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M3 10.5L12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9.5z"/>
+                    </svg>
+                </button>
+                <button id="btnMenuFit" title="Ajuste de Fondo (Cover/Contain)">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="16" rx="2"/>
+                        <circle cx="8.5" cy="9" r="1.5"/>
+                        <path d="M21 15l-5-5L5 20"/>
+                    </svg>
+                </button>
+                <button id="btnMenuGrid" title="Mostrar/Ocultar Cuadrícula">
+                    <svg viewBox="0 0 24 24">
+                        <rect x="2" y="6" width="20" height="12" rx="5"/>
+                        <path d="M8 10v4M6 12h4"/>
+                        <circle cx="15.5" cy="11" r="1"/>
+                        <circle cx="18" cy="13" r="1"/>
+                    </svg>
+                </button>
+                <button id="btnMenuCalib" title="Panel de Calibración">
+                    <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- CALIBRATION PANEL DRAWER -->
+            <div class="calib-panel" id="calibPanel">
+                <div class="calib-header">
+                    <h2>⚙️ Calibrador Live 3D</h2>
+                    <span style="cursor: pointer; color: #94a3b8;" id="btnCloseCalib">✖</span>
+                </div>
+
+                <label style="font-size: 11px; color: #7dd3fc; margin-bottom: 4px; display: block;">Seleccionar Elemento:</label>
+                <select class="calib-select" id="calibTargetSelect">
+                    <option value="musicPlayer">Reproductor de Música</option>
+                    <option value="phoneWidget">Teléfono Gojo</option>
+                    <option value="rightMenuWidget">Menú Lateral Derecho</option>
+                    <option value="cupWidget">Taza Gojo</option>
+                    <option value="moonWidget">Luna Six Eyes</option>
+                    <option value="chibiWidget">Chibi Gojo</option>
+                    <option value="lanternWidget">Linterna Azul</option>
+                </select>
+
+                <div class="calib-group">
+                    <label>Escala: <span id="valScale">2.50</span></label>
+                    <input type="range" id="inpScale" min="0.4" max="4.0" step="0.02" value="2.50">
+                </div>
+
+                <div class="calib-group">
+                    <label>Inclinación X (RotX): <span id="valRotX">-26</span>°</label>
+                    <input type="range" id="inpRotX" min="-90" max="90" step="1" value="-26">
+                </div>
+
+                <div class="calib-group">
+                    <label>Giro Y (RotY): <span id="valRotY">-9</span>°</label>
+                    <input type="range" id="inpRotY" min="-90" max="90" step="1" value="-9">
+                </div>
+
+                <div class="calib-group">
+                    <label>Arriba (Top %): <span id="valTop">43.8</span>%</label>
+                    <input type="range" id="inpTop" min="0" max="100" step="0.1" value="43.8">
+                </div>
+
+                <div class="calib-group">
+                    <label>Escala: <span id="valScale">0.80</span></label>
+                    <input type="range" id="inpScale" min="0.4" max="2.5" step="0.02" value="0.80">
+                </div>
+
+                <div class="calib-group">
+                    <label>Inclinación X (RotX): <span id="valRotX">9</span>°</label>
+                    <input type="range" id="inpRotX" min="-90" max="90" step="1" value="9">
+                </div>
+
+                <div class="calib-group">
+                    <label>Giro Y (RotY): <span id="valRotY">-31</span>°</label>
+                    <input type="range" id="inpRotY" min="-90" max="90" step="1" value="-31">
+                </div>
+
+                <div class="calib-group">
+                    <label>Inclinación Y (SkewY): <span id="valSkewY">-11.5</span>°</label>
+                    <input type="range" id="inpSkewY" min="-45" max="45" step="0.5" value="-11.5">
+                </div>
+
+                <div class="calib-group">
+                    <label>Rotación Z (RotZ): <span id="valRotZ">13</span>°</label>
+                    <input type="range" id="inpRotZ" min="-180" max="180" step="0.5" value="13">
+                </div>
+
+                <div class="calib-btn-row">
+                    <button class="calib-btn" id="btnToggleRefLayer">👁️ Capa Ref</button>
+                    <button class="calib-btn" id="btnSaveConfig">💾 Guardar</button>
+                    <button class="calib-btn" id="btnCopyCSS">📋 Copiar CSS</button>
+                </div>
+            </div>
+
+            <!-- TOAST NOTIFICATION -->
+            <div class="toast" id="toastMsg">Configuración guardada correctamente</div>
+
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT APPLICATION LOGIC -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                // ==========================================================
+                // ZOOM IMMUNITY ENGINE (Compensates browser & OS zoom levels)
+                // ==========================================================
+                const sceneStage = document.getElementById('sceneStage');
+                const BASE_WIDTH = 1280;
+                const BASE_HEIGHT = 720;
+
+                function applyZoomImmuneFit() {
+                    const vv = window.visualViewport;
+                    const viewW = vv ? vv.width : window.innerWidth;
+                    const viewH = vv ? vv.height : window.innerHeight;
+
+                    const fitScale = Math.min(viewW / BASE_WIDTH, viewH / BASE_HEIGHT);
+                    sceneStage.style.transform = `scale(${fitScale})`;
+                }
+
+                window.addEventListener('wheel', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        applyZoomImmuneFit();
+                    }
+                }, { passive: false });
+
+                window.addEventListener('keydown', (e) => {
+                    if ((e.ctrlKey || e.metaKey) && ['+', '-', '=', '0'].includes(e.key)) {
+                        e.preventDefault();
+                        applyZoomImmuneFit();
+                    }
+                });
+
+                window.addEventListener('resize', applyZoomImmuneFit);
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener('resize', applyZoomImmuneFit);
+                    window.visualViewport.addEventListener('scroll', applyZoomImmuneFit);
+                }
+                applyZoomImmuneFit();
+
+                // Unlock Web Audio Context on user interaction
+                function unlockAudioContext() {
+                    if (!audioCtx) {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (audioCtx && audioCtx.state === 'suspended') {
+                        audioCtx.resume();
+                    }
+                }
+                document.addEventListener('click', unlockAudioContext, { once: true });
+                document.addEventListener('touchstart', unlockAudioContext, { once: true });
+
+                // ==========================================================
+                // EXACT PHONE DEFAULT CALIBRATION (0..1000 -> %)
+                // ==========================================================
+                const CONFIG_VERSION = "v3.2_chibi_calibrador_87_68_7_scale_2_50";
+
+                const DEFAULT_CONFIG = {
+                    version: CONFIG_VERSION,
+                    bgFit: 'cover',
+                    widgets: {
+                        musicPlayer:     { left: 3.8,  top: 49.5, scale: 1.00, rotX: 0,   rotY: 4,   rotZ: 0,  skewY: 0,     opacity: 1 },
+                        phoneWidget:     { left: 71.0, top: 47.6, scale: 0.88, rotX: 9,   rotY: -31, rotZ: 13, skewY: -11.5, opacity: 1 },
+                        rightMenuWidget: { left: 93.2, top: 3.8,  scale: 1.00, rotX: 0,   rotY: 0,   rotZ: 0,  skewY: 0,     opacity: 1 },
+                        cupWidget:       { left: 31.2, top: 67.5, scale: 1.00, rotX: 0,   rotY: 0,   rotZ: 0,  skewY: 0,     opacity: 1 },
+                        moonWidget:      { left: 73.5, top: 2.2,  scale: 1.00, rotX: 0,   rotY: 0,   rotZ: 0,  skewY: 0,     opacity: 1 },
+                        chibiWidget:     { left: 87.0, top: 68.7, scale: 2.50, rotX: -26, rotY: -9,  rotZ: 0,  skewY: 0,     opacity: 1 },
+                        lanternWidget:   { left: 89.8, top: 43.8, scale: 0.80, rotX: 0,   rotY: 0,   rotZ: 0,  skewY: 0,     opacity: 1 }
+                    }
+                };
+
+                let activeConfig;
+                const savedConfig = localStorage.getItem('gojo_player_config');
+
+                if (savedConfig) {
+                    try {
+                        const parsed = JSON.parse(savedConfig);
+                        if (parsed && parsed.version === CONFIG_VERSION) {
+                            activeConfig = parsed;
+                        } else {
+                            activeConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+                            localStorage.setItem('gojo_player_config', JSON.stringify(activeConfig));
+                        }
+                    } catch (e) {
+                        activeConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+                    }
+                } else {
+                    activeConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+                }
+
+                const widgets = {
+                    musicPlayer: document.getElementById('musicPlayer'),
+                    phoneWidget: document.getElementById('phoneWidget'),
+                    rightMenuWidget: document.getElementById('rightMenuWidget'),
+                    cupWidget: document.getElementById('cupWidget'),
+                    moonWidget: document.getElementById('moonWidget'),
+                    chibiWidget: document.getElementById('chibiWidget'),
+                    lanternWidget: document.getElementById('lanternWidget')
+                };
+
+                const bgImg = document.getElementById('bgImg');
+                const refLayerImg = document.getElementById('refLayerImg');
+                const bgStatus = document.getElementById('bgStatus');
+
+                if (bgImg) {
+                    bgImg.onerror = () => {
+                        bgImg.style.display = 'none';
+                        if (bgStatus) bgStatus.textContent = "Fondo: Escena Vectorial Fallback";
+                    };
+                }
+
+                if (refLayerImg) {
+                    refLayerImg.onerror = () => {
+                        refLayerImg.style.display = 'none';
+                    };
+                }
+
+                const chibiSpriteImg = document.getElementById('chibiSpriteImg');
+                const CHIBI_DEFAULT_SRC = 'https://xatimg.com/image/j9x9oxb9FWxj.png';
+                const CHIBI_BLUE_SRC = 'https://xatimg.com/image/9njq2RahpZfy.png';
+                const CHIBI_RED_SRC = 'https://xatimg.com/image/Pi6UjsZg7sbU.png';
+                let chibiVariantIdx = 0;
+
+                if (chibiSpriteImg) {
+                    chibiSpriteImg.onerror = () => {
+                        if (chibiSpriteImg.src !== CHIBI_DEFAULT_SRC) {
+                            chibiSpriteImg.src = CHIBI_DEFAULT_SRC;
+                            chibiVariantIdx = 0;
+                            chibiSpriteImg.classList.remove('variant-blue', 'variant-red');
+                            showToast('No se pudo cargar la imagen externa, volviendo al Mini Gojo 1');
+                        } else {
+                            chibiSpriteImg.style.display = 'none';
+                        }
+                    };
+                }
+
+                const btnToggleRefLayer = document.getElementById('btnToggleRefLayer');
+                if (btnToggleRefLayer && refLayerImg) {
+                    btnToggleRefLayer.addEventListener('click', () => {
+                        const isHidden = refLayerImg.classList.toggle('hidden');
+                        showToast(isHidden ? "Capa intermedia oculta" : "Capa intermedia visible");
+                    });
+                }
+
+                function applyWidgetStyle(key) {
+                    const el = widgets[key];
+                    const cfg = activeConfig.widgets[key];
+                    if (!el || !cfg) return;
+
+                    const skewYVal = cfg.skewY || 0;
+                    el.style.left = cfg.left + '%';
+                    el.style.top = cfg.top + '%';
+                    el.style.transform = `scale(${cfg.scale}) rotateX(${cfg.rotX}deg) rotateY(${cfg.rotY}deg) rotateZ(${cfg.rotZ}deg) skewY(${skewYVal}deg)`;
+                    el.style.opacity = cfg.opacity !== undefined ? cfg.opacity : 1;
+                }
+
+                function renderAllWidgets() {
+                    Object.keys(widgets).forEach(applyWidgetStyle);
+                }
+
+                renderAllWidgets();
+
+                // Live Calibration Panel
+                const calibPanel = document.getElementById('calibPanel');
+                const calibTargetSelect = document.getElementById('calibTargetSelect');
+                const inpLeft = document.getElementById('inpLeft');
+                const inpTop = document.getElementById('inpTop');
+                const inpScale = document.getElementById('inpScale');
+                const inpRotX = document.getElementById('inpRotX');
+                const inpRotY = document.getElementById('inpRotY');
+                const inpSkewY = document.getElementById('inpSkewY');
+                const inpRotZ = document.getElementById('inpRotZ');
+
+                const valLeft = document.getElementById('valLeft');
+                const valTop = document.getElementById('valTop');
+                const valScale = document.getElementById('valScale');
+                const valRotX = document.getElementById('valRotX');
+                const valRotY = document.getElementById('valRotY');
+                const valSkewY = document.getElementById('valSkewY');
+                const valRotZ = document.getElementById('valRotZ');
+
+                function updateCalibUI() {
+                    const key = calibTargetSelect.value;
+                    const cfg = activeConfig.widgets[key];
+                    if (!cfg) return;
+
+                    inpLeft.value = cfg.left;
+                    inpTop.value = cfg.top;
+                    inpScale.value = cfg.scale;
+                    inpRotX.value = cfg.rotX;
+                    inpRotY.value = cfg.rotY;
+                    inpSkewY.value = cfg.skewY || 0;
+                    inpRotZ.value = cfg.rotZ;
+
+                    valLeft.textContent = Number(cfg.left).toFixed(1);
+                    valTop.textContent = Number(cfg.top).toFixed(1);
+                    valScale.textContent = Number(cfg.scale).toFixed(2);
+                    valRotX.textContent = cfg.rotX;
+                    valRotY.textContent = cfg.rotY;
+                    valSkewY.textContent = cfg.skewY || 0;
+                    valRotZ.textContent = cfg.rotZ;
+
+                    Object.keys(widgets).forEach(k => {
+                        if (widgets[k]) {
+                            if (k === key) widgets[k].classList.add('widget-selected');
+                            else widgets[k].classList.remove('widget-selected');
+                        }
+                    });
+                }
+
+                calibTargetSelect.addEventListener('change', updateCalibUI);
+
+                function onSliderChange() {
+                    const key = calibTargetSelect.value;
+                    if (!activeConfig.widgets[key]) return;
+
+                    activeConfig.widgets[key].left = parseFloat(inpLeft.value);
+                    activeConfig.widgets[key].top = parseFloat(inpTop.value);
+                    activeConfig.widgets[key].scale = parseFloat(inpScale.value);
+                    activeConfig.widgets[key].rotX = parseFloat(inpRotX.value);
+                    activeConfig.widgets[key].rotY = parseFloat(inpRotY.value);
+                    activeConfig.widgets[key].skewY = parseFloat(inpSkewY.value);
+                    activeConfig.widgets[key].rotZ = parseFloat(inpRotZ.value);
+
+                    applyWidgetStyle(key);
+                    updateCalibUI();
+                }
+
+                [inpLeft, inpTop, inpScale, inpRotX, inpRotY, inpSkewY, inpRotZ].forEach(input => {
+                    if (input) {
+                        input.addEventListener('input', onSliderChange);
+                    }
+                });
+
+                document.getElementById('btnMenuCalib').addEventListener('click', () => {
+                    calibPanel.classList.toggle('active');
+                    if (calibPanel.classList.contains('active')) updateCalibUI();
+                    else Object.keys(widgets).forEach(k => widgets[k] && widgets[k].classList.remove('widget-selected'));
+                });
+
+                document.getElementById('btnCloseCalib').addEventListener('click', () => {
+                    calibPanel.classList.remove('active');
+                    Object.keys(widgets).forEach(k => widgets[k] && widgets[k].classList.remove('widget-selected'));
+                });
+
+                function showToast(msg) {
+                    const toast = document.getElementById('toastMsg');
+                    if (!toast) return;
+                    toast.textContent = msg;
+                    toast.classList.add('show');
+                    setTimeout(() => toast.classList.remove('show'), 2200);
+                }
+
+                document.getElementById('btnSaveConfig').addEventListener('click', () => {
+                    localStorage.setItem('gojo_player_config', JSON.stringify(activeConfig));
+                    showToast('¡Configuración guardada!');
+                });
+
+                function resetPositions() {
+                    activeConfig = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+                    localStorage.setItem('gojo_player_config', JSON.stringify(activeConfig));
+                    renderAllWidgets();
+                    applyZoomImmuneFit();
+                    if (calibPanel.classList.contains('active')) updateCalibUI();
+                    showToast('Posiciones restablecidas');
+                }
+
+                document.getElementById('btnMenuHome').addEventListener('click', resetPositions);
+
+                document.getElementById('btnCopyCSS').addEventListener('click', () => {
+                    let cssText = '/* Gojo Player Positions */\n';
+                    Object.keys(activeConfig.widgets).forEach(k => {
+                        const cfg = activeConfig.widgets[k];
+                        const skewYVal = cfg.skewY || 0;
+                        cssText += `.${k} { left: ${cfg.left}%; top: ${cfg.top}%; transform: scale(${cfg.scale}) rotateX(${cfg.rotX}deg) rotateY(${cfg.rotY}deg) rotateZ(${cfg.rotZ}deg) skewY(${skewYVal}deg); }\n`;
+                    });
+
+                    const tempTextArea = document.createElement('textarea');
+                    tempTextArea.value = cssText;
+                    document.body.appendChild(tempTextArea);
+                    tempTextArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(tempTextArea);
+
+                    showToast('¡CSS copiado al portapapeles!');
+                });
+
+                const gridOverlay = document.getElementById('gridOverlay');
+                document.getElementById('btnMenuGrid').addEventListener('click', () => {
+                    gridOverlay.classList.toggle('active');
+                });
+
+                document.getElementById('btnMenuFit').addEventListener('click', () => {
+                    if (bgImg) {
+                        const currentFit = bgImg.style.objectFit || 'cover';
+                        const newFit = currentFit === 'cover' ? 'contain' : 'cover';
+                        bgImg.style.objectFit = newFit;
+                        showToast(`Modo fondo: ${newFit}`);
+                    }
+                });
+
+                // ==========================================================
+                // AUDIO SYNTHESIZER & SPECTRUM VISUALIZER
+                // ==========================================================
+                let isPlaying = false;
+                let audioCtx = null;
+                let synthOsc = null;
+                let synthGain = null;
+                let animFrameId = null;
+
+                const btnPlay = document.getElementById('btnPlay');
+                const progressFill = document.getElementById('progressFill');
+                const currentTimeEl = document.getElementById('currentTime');
+                const visBars = document.querySelectorAll('.vis-bar');
+
+                let secondsElapsed = 84;
+                const totalSeconds = 232;
+
+                function formatTime(s) {
+                    const mins = Math.floor(s / 60);
+                    const secs = Math.floor(s % 60);
+                    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                }
+
+                // Synth Message Notification Chime (Web Audio API)
+                function playMessageNotificationSound() {
+                    try {
+                        if (!audioCtx) {
+                            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        }
+                        if (audioCtx.state === 'suspended') {
+                            audioCtx.resume();
+                        }
+
+                        const now = audioCtx.currentTime;
+
+                        // Chime Note 1
+                        const osc1 = audioCtx.createOscillator();
+                        const gain1 = audioCtx.createGain();
+                        osc1.type = 'sine';
+                        osc1.frequency.setValueAtTime(880, now); // A5
+                        gain1.gain.setValueAtTime(0.12, now);
+                        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                        osc1.connect(gain1);
+                        gain1.connect(audioCtx.destination);
+                        osc1.start(now);
+                        osc1.stop(now + 0.3);
+
+                        // Chime Note 2
+                        const osc2 = audioCtx.createOscillator();
+                        const gain2 = audioCtx.createGain();
+                        osc2.type = 'sine';
+                        osc2.frequency.setValueAtTime(1318.51, now + 0.1); // E6
+                        gain2.gain.setValueAtTime(0.15, now + 0.1);
+                        gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+                        osc2.connect(gain2);
+                        gain2.connect(audioCtx.destination);
+                        osc2.start(now + 0.1);
+                        osc2.stop(now + 0.55);
+                    } catch (e) {
+                        console.log('Audio chime auto-play restriction:', e);
+                    }
+                }
+
+                const volSlider = document.getElementById('volSlider');
+                const progressBar = document.getElementById('progressBar');
+                const btnPrev = document.getElementById('btnPrev');
+                const btnNext = document.getElementById('btnNext');
+                const btnPlaylistToggle = document.getElementById('btnPlaylistToggle');
+                const playlistBox = document.getElementById('playlistBox');
+
+                function updateSpectrumVisualizer() {
+                    if (!isPlaying) return;
+
+                    visBars.forEach((bar, idx) => {
+                        const wave = Math.sin(Date.now() * 0.012 + idx * 0.75) * 0.5 + 0.5;
+                        const jitter = Math.random() * 0.45;
+                        const pct = Math.min(100, Math.max(12, Math.round((wave * 0.65 + jitter) * 100)));
+                        bar.style.height = `${pct}%`;
+                        if (pct > 65) {
+                            bar.classList.add('active-glow');
+                        } else {
+                            bar.classList.remove('active-glow');
+                        }
+                    });
+
+                    secondsElapsed = (secondsElapsed + 0.08) % totalSeconds;
+                    if (currentTimeEl) currentTimeEl.textContent = formatTime(secondsElapsed);
+                    if (progressFill) progressFill.style.width = `${(secondsElapsed / totalSeconds) * 100}%`;
+
+                    animFrameId = requestAnimationFrame(updateSpectrumVisualizer);
+                }
+
+                function startPlayback() {
+                    if (isPlaying) return;
+                    isPlaying = true;
+                    if (btnPlay) btnPlay.textContent = '⏸';
+
+                    try {
+                        unlockAudioContext();
+                        if (audioCtx) {
+                            synthOsc = audioCtx.createOscillator();
+                            synthGain = audioCtx.createGain();
+                            synthOsc.type = 'triangle';
+                            synthOsc.frequency.setValueAtTime(110, audioCtx.currentTime);
+                            const volVal = volSlider ? parseFloat(volSlider.value) : 0.8;
+                            synthGain.gain.setValueAtTime(Math.max(0.001, volVal * 0.04), audioCtx.currentTime);
+                            synthOsc.connect(synthGain);
+                            synthGain.connect(audioCtx.destination);
+                            synthOsc.start();
+                        }
+                    } catch (err) {
+                        console.log('Synth playback fallback:', err);
+                    }
+
+                    cancelAnimationFrame(animFrameId);
+                    updateSpectrumVisualizer();
+                }
+
+                function stopPlayback() {
+                    isPlaying = false;
+                    if (btnPlay) btnPlay.textContent = '▶';
+                    cancelAnimationFrame(animFrameId);
+                    animFrameId = null;
+
+                    try {
+                        if (synthOsc) {
+                            synthOsc.stop();
+                            synthOsc.disconnect();
+                            synthOsc = null;
+                        }
+                        if (synthGain) {
+                            synthGain.disconnect();
+                            synthGain = null;
+                        }
+                    } catch (err) {
+                        synthOsc = null;
+                        synthGain = null;
+                    }
+
+                    visBars.forEach(bar => {
+                        bar.style.height = '12%';
+                        bar.classList.remove('active-glow');
+                    });
+                }
+
+                function togglePlayback() {
+                    if (isPlaying) {
+                        stopPlayback();
+                        return false;
+                    } else {
+                        startPlayback();
+                        return true;
+                    }
+                }
+
+                if (btnPlay) {
+                    btnPlay.addEventListener('click', () => {
+                        const playingNow = togglePlayback();
+                        showToast(playingNow ? 'Reproduciendo pista' : 'Reproducción en pausa');
+                    });
+                }
+
+                if (volSlider) {
+                    volSlider.addEventListener('input', () => {
+                        if (synthGain && audioCtx) {
+                            synthGain.gain.setValueAtTime(
+                                Math.max(0.001, parseFloat(volSlider.value) * 0.04),
+                                audioCtx.currentTime
+                            );
+                        }
+                    });
+                }
+
+                if (progressBar) {
+                    progressBar.addEventListener('click', (e) => {
+                        const rect = progressBar.getBoundingClientRect();
+                        const clickRatio = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
+                        secondsElapsed = clickRatio * totalSeconds;
+                        if (currentTimeEl) currentTimeEl.textContent = formatTime(secondsElapsed);
+                        if (progressFill) progressFill.style.width = `${clickRatio * 100}%`;
+                    });
+                }
+
+                if (btnPrev) {
+                    btnPrev.addEventListener('click', () => {
+                        secondsElapsed = Math.max(0, secondsElapsed - 15);
+                        if (currentTimeEl) currentTimeEl.textContent = formatTime(secondsElapsed);
+                        if (progressFill) progressFill.style.width = `${(secondsElapsed / totalSeconds) * 100}%`;
+                        showToast('Retroceder 15s');
+                    });
+                }
+
+                if (btnNext) {
+                    btnNext.addEventListener('click', () => {
+                        secondsElapsed = Math.min(totalSeconds, secondsElapsed + 15);
+                        if (currentTimeEl) currentTimeEl.textContent = formatTime(secondsElapsed);
+                        if (progressFill) progressFill.style.width = `${(secondsElapsed / totalSeconds) * 100}%`;
+                        showToast('Adelantar 15s');
+                    });
+                }
+
+                if (btnPlaylistToggle && playlistBox) {
+                    btnPlaylistToggle.addEventListener('click', () => {
+                        playlistBox.style.display = playlistBox.style.display === 'none' ? 'flex' : 'none';
+                    });
+                }
+
+                const appAudioBtn = document.getElementById('appAudio');
+                if (appAudioBtn) {
+                    appAudioBtn.addEventListener('click', () => {
+                        const playingNow = togglePlayback();
+                        showToast(playingNow ? 'Audio reanudado desde el teléfono' : 'Audio detenido desde el teléfono');
+                    });
+                }
+
+                const appThemeBtn = document.getElementById('appTheme');
+                if (appThemeBtn) {
+                    appThemeBtn.addEventListener('click', () => {
+                        const isVoidRed = document.body.classList.toggle('void-red-active');
+                        showToast(isVoidRed ? 'Modo Void Rojo activado' : 'Modo Void Azul restaurado');
+                    });
+                }
+
+                // Phone Whats button toggles blue WhatsApp-style contacts list vs messages
+                const phoneContactsView = document.getElementById('phoneContactsView');
+                const waContactsList = document.getElementById('waContactsList');
+                const btnBackToMsgs = document.getElementById('btnBackToMsgs');
+                let contactsModeActive = false;
+
+                const friendAvatarPresets = [
+                    "https://xatimg.com/image/j9x9oxb9FWxj.png",
+                    "https://xatimg.com/image/9njq2RahpZfy.png",
+                    "https://xatimg.com/image/Pi6UjsZg7sbU.png",
+                    "https://placehold.co/48x48/0284c7/ffffff?text=GO",
+                    "https://placehold.co/48x48/1d4ed8/e0f2fe?text=JK",
+                    "https://placehold.co/48x48/0369a1/bae6fd?text=UV"
+                ];
+
+                const friendContacts = [
+                    {
+                        id: 1,
+                        name: "Megumi Fushiguro",
+                        status: "Sombras en línea",
+                        img: "https://placehold.co/48x48/0284c7/ffffff?text=MF",
+                        presetIdx: 0
+                    },
+                    {
+                        id: 2,
+                        name: "Nobara Kugisaki",
+                        status: "Lista para salir",
+                        img: "https://placehold.co/48x48/0369a1/e0f2fe?text=NK",
+                        presetIdx: 1
+                    },
+                    {
+                        id: 3,
+                        name: "Yuji Itadori",
+                        status: "Entrenando energía",
+                        img: "https://placehold.co/48x48/0ea5e9/ffffff?text=YI",
+                        presetIdx: 2
+                    },
+                    {
+                        id: 4,
+                        name: "Yuta Okkotsu",
+                        status: "En misión especial",
+                        img: "https://placehold.co/48x48/1d4ed8/e0f2fe?text=YO",
+                        presetIdx: 3
+                    },
+                    {
+                        id: 5,
+                        name: "Suguru Geto",
+                        status: "Disponible",
+                        img: "https://placehold.co/48x48/075985/bae6fd?text=SG",
+                        presetIdx: 4
+                    },
+                    {
+                        id: 6,
+                        name: "Nanami Kento",
+                        status: "Hora extra terminada",
+                        img: "https://placehold.co/48x48/1e40af/ffffff?text=KN",
+                        presetIdx: 5
+                    }
+                ];
+
+                const filePickerInput = document.createElement('input');
+                filePickerInput.type = 'file';
+                filePickerInput.accept = 'image/*';
+                filePickerInput.style.display = 'none';
+                document.body.appendChild(filePickerInput);
+
+                let pendingUploadContact = null;
+                let pendingUploadAvatarEl = null;
+
+                filePickerInput.addEventListener('change', (e) => {
+                    const file = e.target.files && e.target.files[0];
+                    if (!file || !pendingUploadContact) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        if (typeof ev.target.result === 'string') {
+                            pendingUploadContact.img = ev.target.result;
+                            if (pendingUploadAvatarEl) {
+                                pendingUploadAvatarEl.src = ev.target.result;
+                            }
+                            showToast(`Imagen de ${pendingUploadContact.name} actualizada`);
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                    filePickerInput.value = '';
+                });
+
+                function renderFriendContacts() {
+                    if (!waContactsList) return;
+                    waContactsList.innerHTML = '';
+
+                    friendContacts.forEach((contact) => {
+                        const row = document.createElement('div');
+                        row.className = 'wa-contact-row';
+
+                        const avatar = document.createElement('img');
+                        avatar.className = 'wa-contact-avatar';
+                        avatar.src = contact.img;
+                        avatar.alt = contact.name;
+                        avatar.title = 'Clic para cambiar imagen';
+                        avatar.style.cursor = 'pointer';
+                        avatar.onerror = () => {
+                            avatar.src = `https://placehold.co/48x48/0284c7/ffffff?text=${encodeURIComponent(contact.name.slice(0, 2))}`;
+                        };
+
+                        avatar.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (e.shiftKey) {
+                                pendingUploadContact = contact;
+                                pendingUploadAvatarEl = avatar;
+                                filePickerInput.click();
+                                return;
+                            }
+                            contact.presetIdx = (contact.presetIdx + 1) % friendAvatarPresets.length;
+                            contact.img = friendAvatarPresets[contact.presetIdx];
+                            avatar.src = contact.img;
+                            showToast(`Foto de ${contact.name} cambiada (Shift+Clic para subir archivo)`);
+                        });
+
+                        const info = document.createElement('div');
+                        info.className = 'wa-contact-info';
+
+                        const meta = document.createElement('div');
+                        meta.className = 'wa-contact-meta';
+
+                        const nameEl = document.createElement('span');
+                        nameEl.className = 'wa-contact-name';
+                        nameEl.textContent = contact.name;
+
+                        const statusEl = document.createElement('span');
+                        statusEl.className = 'wa-contact-status';
+                        statusEl.textContent = contact.status;
+
+                        meta.appendChild(nameEl);
+                        meta.appendChild(statusEl);
+                        info.appendChild(avatar);
+                        info.appendChild(meta);
+
+                        const addBtn = document.createElement('button');
+                        addBtn.className = 'wa-add-btn';
+                        addBtn.textContent = '+ Agregar';
+                        addBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const isAdded = addBtn.classList.toggle('added');
+                            addBtn.textContent = isAdded ? '✓ Listo' : '+ Agregar';
+                            showToast(
+                                isAdded
+                                    ? `${contact.name} agregado a contactos`
+                                    : `${contact.name} eliminado de agregados`
+                            );
+                        });
+
+                        row.appendChild(info);
+                        row.appendChild(addBtn);
+                        waContactsList.appendChild(row);
+                    });
+                }
+
+                renderFriendContacts();
+
+                function setPhoneContactsMode(enable) {
+                    contactsModeActive = enable;
+                    if (contactsModeActive) {
+                        if (phoneNotificationsStack) phoneNotificationsStack.style.display = 'none';
+                        if (phoneContactsView) phoneContactsView.classList.add('active');
+                        showToast('Whats • Contactos');
+                    } else {
+                        if (phoneContactsView) phoneContactsView.classList.remove('active');
+                        if (phoneNotificationsStack) phoneNotificationsStack.style.display = 'flex';
+                        showToast('Mensajes restaurados');
+                    }
+                }
+
+                const appGridBtn = document.getElementById('appGrid');
+                if (appGridBtn) {
+                    appGridBtn.addEventListener('click', () => {
+                        setPhoneContactsMode(!contactsModeActive);
+                    });
+                }
+
+                if (btnBackToMsgs) {
+                    btnBackToMsgs.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        setPhoneContactsMode(false);
+                    });
+                }
+
+                // Track Playlist Switching
+                const playlistItems = document.querySelectorAll('.playlist-item');
+                const trackTitle = document.getElementById('trackTitle');
+                const trackArtist = document.getElementById('trackArtist');
+
+                const playlistData = [
+                    { title: 'Gojo Satoru', artist: 'Jujutsu Kaisen • Unlimited Mix' },
+                    { title: 'SPECIALZ (Shibuya Arc)', artist: 'King Gnu • Cyber Ambient' },
+                    { title: 'Ao no Sumika (Hidden Inventory)', artist: 'Tatsuya Kitani • Lofi Edit' }
+                ];
+
+                playlistItems.forEach(item => {
+                    item.addEventListener('click', () => {
+                        playlistItems.forEach(i => i.classList.remove('active'));
+                        item.classList.add('active');
+                        const idx = parseInt(item.dataset.index, 10);
+                        trackTitle.textContent = playlistData[idx].title;
+                        trackArtist.textContent = playlistData[idx].artist;
+                        secondsElapsed = 0;
+                        showToast(`Pista seleccionada: ${playlistData[idx].title}`);
+                    });
+                });
+
+                // ==========================================================
+                // REAL-TIME CASCADING SIVI NOTIFICATIONS (0s -> 5s -> 10s)
+                // ==========================================================
+                const phoneNotificationsStack = document.getElementById('phoneNotificationsStack');
+                const phoneTime = document.getElementById('phoneTime');
+
+                const siviMessages = [
+                    { id: 1, header: "sivi - mi amorshito", body: "amorshito come tierra", timeOffset: 0 },
+                    { id: 2, header: "sivi - mi amorshito", body: "amorshito conesta", timeOffset: 5000 },
+                    { id: 3, header: "sivi - mi amorshito", body: "amorshito te quiero mucho", timeOffset: 10000 }
+                ];
+
+                let notificationTimers = [];
+
+                function createNotificationCard(msgData) {
+                    const card = document.createElement('div');
+                    card.className = 'phone-card';
+
+                    const now = new Date();
+                    const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+                    card.innerHTML = `
+                        <div class="phone-card-header">
+                            <span class="phone-card-title">${msgData.header}</span>
+                            <span class="phone-card-time">${timeStr}</span>
+                        </div>
+                        <div class="phone-card-body">${msgData.body}</div>
+                    `;
+
+                    return card;
+                }
+
+                function addReplayButton() {
+                    const replayBtn = document.createElement('button');
+                    replayBtn.className = 'replay-msgs-btn';
+                    replayBtn.innerHTML = '🔄 Repetir notificaciones';
+                    replayBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        startCascadingNotifications();
+                        showToast("Reiniciando secuencia de notificaciones...");
+                    });
+                    phoneNotificationsStack.appendChild(replayBtn);
+                }
+
+                function startCascadingNotifications() {
+                    // Clear active timers & container
+                    notificationTimers.forEach(timer => clearTimeout(timer));
+                    notificationTimers = [];
+                    phoneNotificationsStack.innerHTML = '';
+
+                    siviMessages.forEach((msg, index) => {
+                        const timer = setTimeout(() => {
+                            const card = createNotificationCard(msg);
+                            phoneNotificationsStack.insertBefore(card, phoneNotificationsStack.firstChild);
+                            playMessageNotificationSound();
+
+                            // After 3rd message arrives, append replay control
+                            if (index === siviMessages.length - 1) {
+                                setTimeout(addReplayButton, 600);
+                            }
+                        }, msg.timeOffset);
+
+                        notificationTimers.push(timer);
+                    });
+                }
+
+                startCascadingNotifications();
+
+                function updatePhoneClock() {
+                    const now = new Date();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    if (phoneTime) {
+                        phoneTime.textContent = `${hours}:${minutes}`;
+                    }
+
+                    const phoneDate = document.getElementById('phoneDate');
+                    if (phoneDate) {
+                        const formattedDate = now.toLocaleDateString('es-ES', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short'
+                        });
+                        phoneDate.textContent = formattedDate.replace('.', '');
+                    }
+                }
+
+                updatePhoneClock();
+                setInterval(updatePhoneClock, 1000);
+
+                const chibiWidget = document.getElementById('chibiWidget');
+                const chibiMoodBadge = document.getElementById('chibiMoodBadge');
+                const chibiQuoteEl = document.getElementById('chibiQuote');
+
+                const chibiMoods = [
+                    {
+                        className: 'mood-happy',
+                        variantClass: '',
+                        src: CHIBI_DEFAULT_SRC,
+                        badge: '✨',
+                        label: 'Mini Gojo 1 • Feliz',
+                        toast: 'Mini Gojo 1 (Base)'
+                    },
+                    {
+                        className: 'mood-love',
+                        variantClass: 'variant-blue',
+                        src: CHIBI_BLUE_SRC,
+                        badge: '💙',
+                        label: 'Mini Gojo 2 • Azul',
+                        toast: 'Mini Gojo 2 (Azul)'
+                    },
+                    {
+                        className: 'mood-angry',
+                        variantClass: 'variant-red',
+                        src: CHIBI_RED_SRC,
+                        badge: '❤️‍🔥',
+                        label: 'Mini Gojo 3 • Rojo',
+                        toast: 'Mini Gojo 3 (Rojo)'
+                    }
+                ];
+
+                function applyChibiMood(index) {
+                    if (!chibiWidget) return;
+                    const mood = chibiMoods[index % chibiMoods.length];
+                    chibiWidget.classList.remove('mood-happy', 'mood-love', 'mood-angry');
+                    chibiWidget.classList.add(mood.className);
+                    if (chibiMoodBadge) chibiMoodBadge.textContent = mood.badge;
+                    if (chibiQuoteEl) chibiQuoteEl.textContent = mood.label;
+
+                    if (chibiSpriteImg) {
+                        chibiSpriteImg.style.display = '';
+                        chibiSpriteImg.classList.remove('variant-blue', 'variant-red');
+                        if (mood.variantClass) {
+                            chibiSpriteImg.classList.add(mood.variantClass);
+                        }
+                        chibiSpriteImg.src = mood.src;
+                    }
+                }
+
+                applyChibiMood(chibiVariantIdx);
+
+                if (chibiWidget) {
+                    chibiWidget.addEventListener('click', () => {
+                        chibiVariantIdx = (chibiVariantIdx + 1) % chibiMoods.length;
+                        applyChibiMood(chibiVariantIdx);
+
+                        if (chibiSpriteImg) {
+                            chibiSpriteImg.classList.remove('swap-anim');
+                            void chibiSpriteImg.offsetWidth;
+                            chibiSpriteImg.classList.add('swap-anim');
+                        }
+
+                        showToast(chibiMoods[chibiVariantIdx].toast);
+                    });
+                }
+
+                // Draggable Live 3D Calibration Panel
+                const calibHeader = document.querySelector('.calib-header');
+                let isDraggingCalib = false;
+                let dragStartX = 0;
+                let dragStartY = 0;
+                let panelStartLeft = 20;
+                let panelStartTop = 20;
+
+                function startCalibDrag(clientX, clientY) {
+                    const vv = window.visualViewport;
+                    const viewW = vv ? vv.width : window.innerWidth;
+                    const viewH = vv ? vv.height : window.innerHeight;
+                    const fitScale = Math.min(viewW / BASE_WIDTH, viewH / BASE_HEIGHT) || 1;
+
+                    isDraggingCalib = true;
+                    dragStartX = clientX / fitScale;
+                    dragStartY = clientY / fitScale;
+                    panelStartLeft = parseFloat(calibPanel.style.left) || 20;
+                    panelStartTop = parseFloat(calibPanel.style.top) || 20;
+                }
+
+                function moveCalibDrag(clientX, clientY) {
+                    if (!isDraggingCalib) return;
+
+                    const vv = window.visualViewport;
+                    const viewW = vv ? vv.width : window.innerWidth;
+                    const viewH = vv ? vv.height : window.innerHeight;
+                    const fitScale = Math.min(viewW / BASE_WIDTH, viewH / BASE_HEIGHT) || 1;
+
+                    const currentX = clientX / fitScale;
+                    const currentY = clientY / fitScale;
+
+                    const maxLeft = Math.max(0, BASE_WIDTH - calibPanel.offsetWidth);
+                    const maxTop = Math.max(0, BASE_HEIGHT - calibPanel.offsetHeight);
+
+                    const nextLeft = Math.min(maxLeft, Math.max(0, panelStartLeft + (currentX - dragStartX)));
+                    const nextTop = Math.min(maxTop, Math.max(0, panelStartTop + (currentY - dragStartY)));
+
+                    calibPanel.style.left = `${nextLeft}px`;
+                    calibPanel.style.top = `${nextTop}px`;
+                }
+
+                function stopCalibDrag() {
+                    isDraggingCalib = false;
+                }
+
+                if (calibHeader) {
+                    calibHeader.style.cursor = 'grab';
+                    calibHeader.addEventListener('mousedown', (e) => {
+                        if (e.target && e.target.id === 'btnCloseCalib') return;
+                        startCalibDrag(e.clientX, e.clientY);
+                    });
+                    calibHeader.addEventListener('touchstart', (e) => {
+                        if (e.target && e.target.id === 'btnCloseCalib') return;
+                        if (e.touches.length > 0) {
+                            startCalibDrag(e.touches[0].clientX, e.touches[0].clientY);
+                        }
+                    }, { passive: true });
+                }
+
+                document.addEventListener('mousemove', (e) => moveCalibDrag(e.clientX, e.clientY));
+                document.addEventListener('touchmove', (e) => {
+                    if (isDraggingCalib && e.touches.length > 0) {
+                        moveCalibDrag(e.touches[0].clientX, e.touches[0].clientY);
+                    }
+                }, { passive: true });
+                document.addEventListener('mouseup', stopCalibDrag);
+                document.addEventListener('touchend', stopCalibDrag);
+
+            } catch (err) {
+                console.error("Gojo Player initialization safeguard:", err);
+            }
+        });
+    </script>
+</body>
+</html>
